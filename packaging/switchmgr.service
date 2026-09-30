@@ -1,0 +1,20 @@
+# systemd 服务（Linux NAS / 服务器）
+#   sudo cp dist/switchmgr-linux-amd64 /usr/local/bin/switchmgr
+#   sudo cp packaging/switchmgr.service /etc/systemd/system/
+#   sudo systemctl edit switchmgr     # 按需覆盖 User、密码、数据目录
+#   sudo systemctl enable --now switchmgr
+[Unit]
+Description=my-switch-manager (Switch 游戏库管理器)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=switchmgr
+Environment=SWITCHMGR_DATA=/var/lib/switchmgr
+Environment=SWITCHMGR_PASSWORD=change-me
+StateDirectory=switchmgr
+ExecStart=/usr/local/bin/switchmgr serve --listen 0.0.0.0:8765
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

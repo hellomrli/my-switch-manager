@@ -1,0 +1,45 @@
+# Build outputs
+/dist/
+/switchmgr
+/switchmgr.exe
+/switchmgr-linux-*
+*.syso
+*.test
+*.exe
+/coverage.out
+
+# Local tools and credentials
+/.claude/
+/.vscode/
+/.idea/
+.env
+.env.*
+!.env.example
+*.keys
+*.pem
+*.key
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# Runtime data (not the internal/titledb source package)
+/titledb/
+config.json
+custom_names.json
+manual_ids.json
+scan_cache.json
+_undo_*.json
+_undo_*.json.done
+_before_*.txt
+_redundant/
+
+# Games and extracted content
+*.nsp
+*.xci
+*.nsz
+*.xcz
+*.nca
+*.tik
+*.cert

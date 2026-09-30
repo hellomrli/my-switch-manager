@@ -1,0 +1,20 @@
+# 在项目根目录：docker compose -f packaging/docker-compose.yml up -d --build
+services:
+  switchmgr:
+    build:
+      context: ..
+      dockerfile: packaging/Dockerfile
+    image: my-switch-manager
+    container_name: my-switch-manager
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      # 局域网访问务必设置密码（HTTP Basic，用户名任意）
+      - SWITCHMGR_PASSWORD=change-me
+      - TZ=Asia/Shanghai
+    # 整理 / 改名会以此用户身份写文件，按 NAS 上游戏目录的属主调整（Unraid 常用 99:100）
+    user: "99:100"
+    volumes:
+      - ./data:/data                       # 设置、自定义中文名、扫描缓存、元数据库
+      - /mnt/user/模拟器/Switch:/games      # 游戏库（界面里填 /games）

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Switch 游戏库</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="11" height="24" rx="5.5" fill="currentColor"/><rect x="18" y="4" width="11" height="24" rx="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="8.5" cy="11" r="2.3" fill="var(--bg-side)"/><circle cx="23.5" cy="20" r="2.3" fill="currentColor"/></svg>
+      <div>
+        <div class="brand-name">Switch 游戏库</div>
+        <div class="brand-sub">my-switch-manager</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#/library" data-view="library"><i data-icon="grid"></i><span>游戏库</span></a>
+      <a href="#/organize" data-view="organize"><i data-icon="folder"></i><span>整理</span></a>
+      <a href="#/tools" data-view="tools"><i data-icon="tool"></i><span>工具</span></a>
+      <a href="#/settings" data-view="settings"><i data-icon="gear"></i><span>设置</span></a>
+    </nav>
+    <div class="side-status" id="side-status"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div id="jobbar" class="jobbar hidden"></div>
+<div id="drawer-root"></div>
+<div id="modal-root"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

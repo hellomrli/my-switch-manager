@@ -1,0 +1,118 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Go tests
+        run: go test ./... -count=1
+      - name: Go vet
+        run: go vet ./...
+      - name: Frontend syntax
+        run: node --check internal/server/web/app.js
+      - name: Frontend regression tests
+        run: node --test internal/server/preview.test.js
+      - name: Race detector
+        if: runner.os == 'Linux'
+        run: go test -race ./... -count=1
+      - name: Packaging regression tests
+        if: runner.os == 'Linux'
+        run: python3 packaging/build_test.py
+
+  build:
+    name: Build binaries
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Select version
+        id: version
+        shell: bash
+        run: |
+          version=0.0.0
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          if [[ ! "$version" =~ ^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}(\.[0-9]{1,5})?$ ]]; then
+            printf 'Invalid release version: %s\n' "$version" >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+      - name: Install Windows resource tool
+        run: go install github.com/tc-hib/go-winres@v0.3.3
+      - name: Build release packages
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: packaging/build.sh "$VERSION"
+      - name: Upload cloud build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: binaries
+          path: dist/${{ steps.version.outputs.version }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download cloud build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: binaries
+          path: release
+      - name: Verify checksums
+        working-directory: release
+        run: sha256sum -c SHA256SUMS
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes "由 GitHub Actions 云端编译。Windows 用户推荐下载 windows-amd64.zip，解压后运行 switchmgr.exe；Linux 用户选择对应架构的二进制。SHA256SUMS 可用于校验下载文件。Linux/Windows 自动化测试通过；真实密钥/数据库样本不在 CI 中，使用前请先用游戏副本验证整理与撤销。"
